@@ -78,33 +78,36 @@ class Blockchain(object):
         """
         return self.chain[-1]
 
-    def proof_of_work(self, last_proof):
+    def proof_of_work(self, last_proof, last_hash):
         """
         Simple Proof of Work algorithm:
         - Find a number p' such that hash(pp') contains 4 leading zeroes.
         - p is the previous proof, and p' is the new proof.
 
         :param last_proof: <int>
+        :param last_hash: <str> Hash of the last Block.
         :return: <int> The new proof.
         """
 
         proof = 0
-        while self.validate_proof(last_proof, proof) is False:
+        while self.validate_proof(last_proof, proof, last_hash) is False:
             proof += 1
 
         return proof
 
     @staticmethod
-    def validate_proof(last_proof, proof):
+    def validate_proof(last_proof, proof, last_hash):
         """
         Validates a Proof: i.e. hash(last_proof, proof) contains 4 leading zeroes.
 
         :param last_proof: <int> Previous Proof.
         :param proof: <int> Proof to be validated.
+        :param last_hash: <str> Hash of the last Block.
         :return: <bool> True if correct, False if not.
         """
 
-        guess = f'{last_proof}{proof}'.encode()
+        # TODO The proof of work needs to be tied to the transaction history,
+        guess = f'{last_proof}{proof}{last_hash}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[:4] == "0000"
 
@@ -137,7 +140,7 @@ class Blockchain(object):
                 return False
 
             # Validate the Proof of Work.
-            if not self.validate_proof(last_block['proof'], block['proof']):
+            if not self.validate_proof(last_block['proof'], block['proof'], block['previous_hash']):
                 return False
 
             last_block = block
@@ -189,8 +192,9 @@ blockchain = Blockchain()
 @app.route('/mine', methods=['GET'])
 def mine():
     # Run the Proof of Work algorithm to get the next proof.
-    last_proof = blockchain.last_block['proof']
-    proof = blockchain.proof_of_work(last_proof)
+    last_block = blockchain.last_block
+    last_proof = last_block['proof']
+    proof = blockchain.proof_of_work(last_proof, blockchain.hash(last_block))
 
     # Receive a reward for finding the proof.
     # The sender is "0" to signify that this node has mined a new coin.
