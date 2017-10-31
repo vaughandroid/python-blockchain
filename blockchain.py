@@ -129,7 +129,7 @@ class Blockchain(object):
 
         last_block = blocks[0]
         current_index = 1
-        while (current_index < len(blocks)):
+        while current_index < len(blocks):
             block = blocks[current_index]
 
             # Validate the hash.
@@ -160,9 +160,9 @@ class Blockchain(object):
         for node in self.nodes:
             response = requests.get(f'http://{node}/chain')
             if response.status_code == 200:
-                json = response.json()
-                length = json['length']
-                chain = json['chain']
+                response_json = response.json()
+                length = response_json['length']
+                chain = response_json['chain']
 
                 if length > current_length and self.validate_chain(chain):
                     new_chain = chain
@@ -235,6 +235,41 @@ def full_chain():
         'chain': blockchain.chain,
         'length': len(blockchain.chain)
     }
+    return jsonify(response), 200
+
+
+@app.route('/nodes/register', methods=['POST'])
+def register_nodes():
+    nodes = request.get_json()['nodes']
+
+    if not nodes:
+        return "Error: Please supply a valid list of Nodes", 400
+
+    for node in nodes:
+        blockchain.register_node(node)
+
+    response = {
+        'message': 'New nodes have been added',
+        'all_nodes': list(blockchain.nodes)
+    }
+    return jsonify(response), 201
+
+
+@app.route('/nodes/resolve', methods=['GET'])
+def resolve_conflicts():
+    chain_replaced = blockchain.resolve_conflicts()
+
+    if chain_replaced:
+        response = {
+            'message': 'Our chain was replaced',
+            'new_chain': blockchain.chain
+        }
+    else:
+        response = {
+            'message': 'Our chain is authoritative',
+            'new_chain': blockchain.chain
+        }
+
     return jsonify(response), 200
 
 
