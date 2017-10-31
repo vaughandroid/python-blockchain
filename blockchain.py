@@ -70,3 +70,33 @@ class Blockchain(object):
         :return: <dict> The Block.
         """
         return self.chain[-1]
+
+    def proof_of_work(self, last_proof):
+        """
+        Simple Proof of Work algorithm:
+        - Find a number p' such that hash(pp') contains 4 leading zeroes.
+        - p is the previous proof, and p' is the new proof.
+
+        :param last_proof: <int>
+        :return: <int> The new proof.
+        """
+
+        proof = 0
+        while self.validate_proof(last_proof, proof) is False:
+            proof += 1
+
+        return proof
+
+    @staticmethod
+    def validate_proof(last_proof, proof):
+        """
+        Validates a Proof: i.e. hash(last_proof, proof) contains 4 leading zeroes.
+
+        :param last_proof: <int> Previous Proof.
+        :param proof: <int> Proof to be validated.
+        :return: <bool> True if correct, False if not.
+        """
+
+        guess = f'{last_proof}{proof}'.encode()
+        guess_hash = hashlib.sha256(guess).hexdigest()
+        return guess_hash[:4] == "0000"
