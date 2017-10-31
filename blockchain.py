@@ -4,6 +4,7 @@ from time import time
 from urllib.parse import urlparse
 from uuid import uuid4
 
+import requests
 from flask import Flask, jsonify, request
 
 
@@ -143,6 +144,36 @@ class Blockchain(object):
             current_index += 1
 
         return True
+
+    def resolve_conflicts(self):
+        """
+        The Consensus algorithm. Conflicts are resolved by preferring the longest valid chain.
+        If another chain in the network is longer, replace our chain with it.
+
+        :return: <bool> True if our chain was replaced, False if not.
+        """
+
+        new_chain = None
+        current_length = len(self.chain)
+
+        # Look for valid chains which are longer than ours.
+        for node in self.nodes:
+            response = requests.get(f'http://{node}/chain')
+            if response.status_code == 200:
+                json = response.json()
+                length = json['length']
+                chain = json['chain']
+
+                if length > current_length and self.validate_chain(chain):
+                    new_chain = chain
+                    current_length = length
+
+        # Replace our chain if we found one which was longer than ours.
+        if new_chain:
+            self.chain = new_chain
+            return True
+
+        return False
 
 
 # Instantiate our Node.
