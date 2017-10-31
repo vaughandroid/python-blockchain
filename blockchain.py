@@ -1,11 +1,34 @@
+import hashlib
+import json
+from time import time
+
 class Blockchain(object):
     def __init__(self):
         self.chain = []
         self.current_transactions = []
 
-    def new_block(self):
-        # Creates a new Block and adds it to the chain.
-        pass
+        # Create the genesis block.
+        self.new_block(previous_hash=1, proof=100)
+
+    def new_block(self, proof, previous_hash):
+        """
+        Create a new Block in the Blockchain.
+
+        :param proof: <int> The proof given by the Proof of Work algorithm.
+        :param previous_hash: (Optional) <str> Hash of previous Block.
+        :return: <dict> The new Block.
+        """
+
+        block = {
+            'index': len(self.chain) + 1,
+            'timestamp': time(),
+            'transactions': self.current_transactions,
+            'proof': proof,
+            'previous_hash': previous_hash or self.hash(self.last_block)
+        }
+        self.chain.append(block)
+        self.current_transactions = []
+        return block
 
     def new_transaction(self, sender, recipient, amount):
         """
@@ -32,5 +55,9 @@ class Blockchain(object):
 
     @property
     def last_block(self):
-        # Returns the last Block in the chain.
-        pass
+        """
+        The most recently added Block in the Blockchain.
+
+        :return: <dict> The Block.
+        """
+        return self.chain[-1]
