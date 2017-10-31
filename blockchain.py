@@ -12,7 +12,7 @@ class Blockchain(object):
         self.current_transactions = []
 
         # Create the genesis block.
-        self.new_block(previous_hash=1, proof=100)
+        self.new_block(proof=100, previous_hash=1)
 
     def new_block(self, proof, previous_hash):
         """
@@ -118,8 +118,29 @@ blockchain = Blockchain()
 
 @app.route('/mine', methods=['GET'])
 def mine():
-    # Mine a new Block
-    pass
+    # Run the Proof of Work algorithm to get the next proof.
+    last_proof = blockchain.last_block['proof']
+    proof = blockchain.proof_of_work(last_proof)
+
+    # Receive a reward for finding the proof.
+    # The sender is "0" to signify that this node has mined a new coin.
+    blockchain.new_transaction(
+        sender="0",
+        recipient=node_identifier,
+        amount=1
+    )
+
+    # Create the new Block by adding it to the chain.
+    block = blockchain.new_block(proof)
+
+    response = {
+        'message': "New Block created",
+        'index': block['index'],
+        'transactions': block['transactions'],
+        'proof': block['proof'],
+        'previous_hash': block['previous_hash']
+    }
+    return jsonify(response), 200
 
 
 @app.route('/transactions/new', methods=['POST'])
